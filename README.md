@@ -10,7 +10,7 @@ github eiriktsarpalis/kafork:<commit hash> src/Kafork/Kafork.fs
 ```
 and in paket.references:
 ```
-File: ConfluentKafka.fs
+File: Kafork.fs
 ```
 Your project would need to additionally reference the following nuget dependencies:
 ```
@@ -20,7 +20,3 @@ Confluent.Kafka
 ## Running Tests
 
 Make sure you set the `KAFORK_TEST_BROKER` environment variable to an appropriate kafka broker before running the tests.
-
-## Desired features from C# driver
-* Producer support of asynchronous buffer overflow (pushback)
-* Consumer: support of asynchronous message handler
