@@ -155,7 +155,7 @@ module Config =
         mkKey "auto.offset.reset"
             (function
             | AutoOffsetReset.Earliest -> "earliest"
-            | AutoOffsetReset.Latest -> "lastest"
+            | AutoOffsetReset.Latest -> "latest"
             | AutoOffsetReset.None -> "none")
 
 
