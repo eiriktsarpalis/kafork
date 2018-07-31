@@ -57,26 +57,26 @@ module private Helpers =
                     else ek(Exception "invalid Task state!"))
                 |> ignore
 
-[<Struct; RequireQualifiedAccess>]
+[<RequireQualifiedAccess>]
 type Acks =
     | Zero
     | One
     | All
 
-[<Struct; RequireQualifiedAccess>]
+[<RequireQualifiedAccess>]
 type Compression =
     | None
     | GZip
     | Snappy
     | LZ4
 
-[<Struct; RequireQualifiedAccess>]
+[<RequireQualifiedAccess>]
 type AutoOffsetReset =
     | Earliest
     | Latest
     | None
 
-[<Struct; RequireQualifiedAccess>]
+[<RequireQualifiedAccess>]
 type Partitioner =
     | Random
     | Consistent
@@ -102,9 +102,17 @@ module Config =
 
     let private mkKey id render = Key(id, render >> box)
     let private ms (t : TimeSpan) = int t.TotalMilliseconds
+    let private validateBrokerUri (u:Uri) =
+        if not u.IsAbsoluteUri then invalidArg "broker" "should be of 'host:port' format"
+        if String.IsNullOrEmpty u.Authority then 
+            // handle a corner case in which Uri instances are erroneously putting the hostname in the `scheme` field.
+            if System.Text.RegularExpressions.Regex.IsMatch(string u, "^\S+:[0-9]+$") then string u
+            else invalidArg "broker" "should be of 'host:port' format"
+
+        else u.Authority
 
     // shared keys
-    let broker = mkKey "bootstrap.servers" (fun (u:Uri) -> string u)
+    let broker = mkKey "bootstrap.servers" validateBrokerUri
     let clientId = mkKey "client.id" id<string>
     let maxInFlight = mkKey "max.in.flight.requests.per.connection" id<int>
     let logConnectionClose = mkKey "log.connection.close" id<bool>
@@ -645,11 +653,11 @@ type KafkaConsumer with
         let partitionHandler (messages : KafkaMessage[]) = async {
             return!
                 messages
-                |> Array.groupBy (fun m -> m.Key)
+                |> Seq.groupBy (fun m -> m.Key)
                 |> Seq.map (fun (_,gp) -> async { 
                     let! ct = Async.CancellationToken
                     let! _ = semaphore.WaitAsync ct |> Async.AwaitTaskCorrect
-                    try do! keyHandler gp 
+                    try do! keyHandler (Seq.toArray gp)
                     finally semaphore.Release() |> ignore })
                 |> Async.Parallel
                 |> Async.Ignore
